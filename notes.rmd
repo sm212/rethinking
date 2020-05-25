@@ -1,0 +1,420 @@
+---
+title: "Statistical Rethinking - chapter notes"
+output: 
+  html_document:
+    theme: lumen
+    df_print: paged
+    toc: True
+    toc_float: True
+    collapsed: False
+    number_sections: False
+    
+---
+
+```{r echo = F, include = F, warning = F}
+library(tidyverse)
+library(patchwork)
+```
+
+# Chapter 1 - Small worlds & large worlds
+
+It's important to remember that models are only *models* of the real world - predictions from a model may not line up with real world observations. The model might be incredibly certain about its predictions, but that doesn't mean they're correct. McElreath calls this 'small world vs large world'. Models involve assumptions, so they're only ever correct in the 'small world' where these assumptions are true. It's up to us to move the model predictions into the 'large world'. This isn't at all trivial. Ignoring the difference between 'small' & 'large' worlds can be very bad - we can easily end up making very bad decisions if we pretend that our 'small world' model applies to the 'large world'.
+
+# Chapter 2 - Probability is just counting
+
+Flip a coin, what's the probability of getting a head? There's two possible outcomes (heads or tails), and one of these is the outcome we're interested in (heads). So the probability is 1 / 2.
+
+Draw a card from a regular deck, what's the probability of getting an ace? There's 52 possible outcomes (we can pick any card from the deck), 4 of these cards are aces. The probability is 4 / 52.
+
+Probability is just counting. No matter how weird a problem looks, all we're trying to do is count things.
+
+There's a mathy way of writing down probabilities. Let's say that $P(A)$ means 'the probability that event $A$ occurs'. Then
+
+$$
+P(A) = \frac{\text{Number of events where } A \text{ occurs}}{\text{Total number of events}}
+$$
+Probabilities are always between zero & one. If event $A$ never happens, then the numerator is zero, so the probability is zero. If event $A$ always happens, then the numerators is the same as the denominator, so the probability is one.
+
+There's no reason to stop at one event. We can talk about the probability of events $A$ and $B$ occuring,  $P(A, B)$. We can also ask questions like 'what's the probability of event $A$ occuring, given that event $B$ has already occured?'. This is called the 'conditional probability', and is written as $P(A | B)$. If $A$ doesn't depend on $B$, then $P(A|B) = P(A)$. When this happens, we say that $A$ and $B$ are **independent**.
+
+As usual, there's a formula connecting all these probabilities together:
+
+$$
+P(A,B) = P(A)P(B|A)
+$$
+
+Looks a bit weird as a formula, but makes sense if you say it out loud - for events $A$ and $B$ to both occur, first event $A$ occurs, then event $B$ occurs. There's no special reason why event $A$ has to occur first, and we could have also written:
+
+$$
+P(A,B) = P(B)P(A|B)
+$$
+
+Now we've got two different ways of writing $P(A,B)$. A bit of rearranging gives this formula
+
+$$
+P(A|B) = \frac{P(B|A)P(A)}{P(B)}
+$$
+
+this is called **Bayes rule**, and it's the big equation behind all of bayesian analysis.
+
+This is getting a bit mathematical. Remember though, probability is just counting. That formula looks a bit weird, so here's a few examples of how it works:
+
+>You have 3 cards. One of them is black on both sides (B/B), one is black on one side & white on the other (B/W), and one is white on both sides (W/W). Pick a card at random and put it face up on a table. The face up side is black. What's the probability that the face down side is also black?
+
+There's a fair bit to keep track of here, which makes counting a bit harder. Let's put everything in a table to make things easy:
+
+| Card drawn | Number of ways of getting a black face up side | Number of ways of drawing card | Total number of ways | Probability |
+| - | - | - | - | - |
+| B/B | 2 | 1 | 2 | 2/3 |
+| B/W | 1 | 1 | 1 | 1/3 |
+| W/W | 0 | 1 | 0 | 0 |
+
+So the probability that you drew the B/B card, given that you've already seen one side is black, is 2/3.
+
+How about this one:
+
+>You have 3 cards. One of them is black on both sides (B/B), one is black on one side & white on the other (B/W), and one is white on both sides (W/W). The black sides have lots of ink on them, which makes it a bit heavier. On average, every time you pick the B/B card, you're twice as likely to pick the B/W card and three times as likely to pick the W/W card.
+>
+>Pick a card at random and put it face up on a table. The face up side is black. What's the probability that the face down side is also black?
+
+Here's the table we need:
+
+| Card drawn | Number of ways of getting a black face up side | Number of ways of drawing card | Total number of ways | Probability |
+| - | - | - | - | - |
+| B/B | 2 | 1 | 2 | 1/2 |
+| B/W | 1 | 2 | 2 | 1/2 |
+| W/W | 0 | 3 | 0 | 0 |
+
+So the probability that you drew the B/B card, given that you've already seen one side is black, is now 1/2.
+
+One more for good luck:
+
+>Back to the original problem - you've 3 cards, pick one at random & put it face up. It's black. Now pick another card and put it face up. It's white. What's the probability that the first card is black on both sides?
+
+Here's the table (make sure you can derive every number in this table):
+
+| First card drawn | Number of ways of getting a black, then a white face up side | Number of ways of drawing card | Total number of ways | Probability |
+| - | - | - | - | - |
+| B/B | 6 | 1 | 6 | 3/4 |
+| B/W | 2 | 1 | 2 | 1/4 |
+| W/W | 0 | 1 | 0 | 0 |
+
+So the probability that you drew the B/B card is 3/4.
+
+This counting business is secretly just Bayes rule. Here's some names:
+
+* The number of ways of seeing the data you saw is called the **likelihood**
+* The number of ways of getting the data, before you've saw anything, is called the **prior**
+* Multiplying those two things gives you the **posterior**
+
+We can rewrite Bayes rule using these new names:
+
+$$posterior \propto likelihood \times prior$$
+
+We've left out the $P(B)$ term from the denominator. All this does is make sure the probabilities are between zero & one. You can ignore it in most problems you work on.
+
+Writing Bayes rule this way makes it a bit easier to see what those tables above are doing. The "Number of ways of..." column is the likelihood, and the "Number of ways of drawing card" column is the prior. Multiply them together to get the posterior (called "Total number of ways" in the table). To interpret this as a probability, it needs to be between zero and one. The last column is just the previous column divided by its sum.
+
+# Chapter 3 - Sampling
+
+Let's go through a proper example to see how this works in R. Imagine you find a coin, and you want to know if it's biased - if $P(Heads) \neq 0.5$. The only way to answer this is to do an experiment. Flip the coin a bunch of times. Then you can compute $P(H | \text{Data})$ - the probability of the coin being biased, after seeing the data. Using the words we learnt in chapter 2, this thing is an example of a posterior distribution.
+
+Here's how posteriors work in R. Imagine we do an experiment where we flip a coin 9 times. We get this data HTHHHTHTH - 6 heads, 3 tails.
+
+```{r}
+n_heads = 6
+n_flips = 9
+
+p_grid = seq(0, 1, length.out = 1000) # Coin bias. 0 => Always tails, 1 => Always heads
+prior = rep(1, length(p_grid))
+lhood = dbinom(n_heads, n_flips, prob = p_grid)
+
+posterior = lhood * prior
+posterior = posterior / sum(posterior) # Normalise to [0, 1]
+```
+
+```{r echo = F, fig.height = 3, fig.width = 6, fig.align = 'center'}
+plot_df = data.frame(p_grid = p_grid,
+                     posterior = posterior)
+
+ggplot(plot_df, aes(p_grid, posterior)) +
+  geom_line() +
+  theme(panel.background = element_blank(),
+        plot.background = element_rect(colour = 'grey70'),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank()) +
+  labs(title = paste('Posterior distribution, after flipping the coin',
+                     n_flips,
+                     'times and getting',
+                     n_heads,
+                     'heads'))
+```
+
+Each point on the x-axis is a potential coin bias. Each point on the curve is the probability of seeing the data we saw, assuming the coin has that bias.
+
+Posteriors contain a lot of information, and there's a lot we can use them for. The most likely value for the bias is the point where the curve is highest (0.67), and we talk about the probability of the bias being between two values by looking at the area under the curve. In almost every real-world setting, you won't have a nice posterior like this. You'll more often be interested in estimating multiple parameters, which makes the posterior higher dimensional. It's hard to draw a 3d surface on a screen. It's even harder to estimate a 3d surface from data. Once you start working on problems with several parameters, direct computation of the posterior becomes impossible.
+
+The way people get around this is by **sampling** from the posterior. All the fancy techniques (MCMC, HMC, ...) will only ever return samples from a distribution. Since we're eventually going to end up working only with samples, let's start early.
+
+Here's some samples from the posterior:
+
+```{r}
+set.seed(394)
+samples = sample(p_grid, 1e4, replace = T, prob = posterior)
+```
+
+The density of `samples` looks very similar to the posterior:
+
+```{r echo = F, fig.height = 3, fig.width = 6, fig.align = 'center'}
+samples %>%
+  as.data.frame() %>% 
+  ggplot(aes(.)) +
+  geom_density(adjust = 1.2) +
+  theme(panel.background = element_blank(),
+        plot.background = element_rect(colour = 'grey70'),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank()) +
+  labs(title = 'Distribution of samples')
+```
+
+So summaries of `samples` will be a good approximation to summaries of the posterior. 
+
+## Summary - area under the curve
+
+Probably the most common summary is the area under the curve. This is the answer to the questions "what's the probability that the parameter lies in some range?". Computing area under curves requires integrating the posterior, which is effort. If we're working with samples, look how easy it is:
+
+```{r}
+# Probability that the bias is less than 0.5
+sum(samples < 0.5) / length(samples)
+```
+
+So about 17% of the posterior probability is below 0.5. Since we have the full posterior computed, we can compare this to the actual value:
+
+```{r}
+sum(posterior[p_grid < 0.5])
+```
+
+About 17% - same as the samples answer. You can also ask about the posterior being between two values:
+
+```{r}
+sum(samples > 0.6 & samples < 0.9) / length(samples)
+```
+
+You can find the range of parameter values which contain some set percentage of the posterior:
+
+```{r}
+quantile(samples, c(0.1, 0.9)) # Which bias values contain 80% of the data?
+```
+
+This type of interval - a **percentile interval** - are very common. They assume that the tails have equal probability, so don't use them if the distribution is very skewed.
+
+There's loads of different intervals with the same density. Look at this one:
+
+```{r}
+sum(samples > 0.35 & samples < 0.77) / length(samples)
+```
+
+The density between (0.45, 0.81) and (0.35, 0.77) are both 80%. You might be interested in the *smallest possible* interval of a certain density:
+
+```{r}
+rethinking::HPDI(samples, 0.8)
+```
+
+This is roughly the same as the intial quantile calculation. This happens because the posterior is roughly symmetric.
+
+## Summary - simulating predictions
+
+Bayesian models are generative. Every time you fit a bayesian model, you need to make assumptions of how your data is distributed. Coin flips are binomially distributed:
+
+$$
+n_H \sim Binom(n_F, p_H)
+$$
+
+Read this as 'the number of heads observed is binomially distributed, and depends on the number of flips $n_F$ and the probability of getting heads $p_H$'.
+
+Since we know the distribution, we can simulate data from it:
+
+```{r}
+set.seed(6437)
+rbinom(n = 1, size = 2, prob = 0.7)
+```
+
+This generates a single data point (`n = 1`) from an experiment where you flip a coin twice (`size = 2`) with probability of getting heads 0.7 (`prob = 0.7`). From those two coin flips one landed on heads, which is why there's a `1` printed out.
+
+We can easily get more data points by increasing `n`:
+
+```{r}
+rbinom(n = 10, size = 2, prob = 0.7)
+```
+
+In our experiment we flipped the coin 9 times:
+
+```{r}
+sim_data = rbinom(1e5, 9, 0.7)
+```
+
+```{r, fig.height = 3, fig.width = 6, fig.align = 'center', echo = F}
+sim_data %>%
+  data.frame() %>%
+  ggplot(aes(.)) +
+  geom_histogram(bins = 30) +
+  theme(panel.background = element_blank(),
+        plot.background = element_rect(colour = 'grey70'),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank()) +
+  labs(title = 'Distribution of simulated observations') +
+  scale_x_continuous(breaks = 0:9)
+```
+
+So, if the data is binomial with $p_H = 0.7$ and we flip the coin 9 times, this is the sort of data we would expect to see - most of the time we will observe 6 or 7 heads.
+
+This sort of information is very useful for *model checking*. The posterior looks very similar to the expected data, so we're a bit more confident that our model is correct.
+
+We used a specific bias (`prob = 0.7`), but there's no reason to just pass a single number to `rbinom`. If `prob` is a vector then different probabilities are used for different experiments:
+
+```{r}
+rbinom(2, 2, prob = c(0, 1))
+```
+
+This does two experiments. In each experiment we flip the coin twice. In the first experiment, the probability of landing on heads is zero, in the second the probability is one.
+
+`samples` is a big vector of probabilities, so we can use that:
+
+```{r}
+sim_data = rbinom(length(samples), 9, samples)
+```
+
+The values in `samples` occur proportionally to the posterior - biases with high posterior probabilities occur more frequently. This means that the simulated data has been averaged over the posterior. This `sim_data` has a name, the **posterior predictive distribution**.
+
+```{r, fig.height = 3, fig.width = 6, fig.align = 'center', echo = F}
+sim_data %>%
+  data.frame() %>%
+  ggplot(aes(.)) +
+  geom_histogram(bins = 30) +
+  theme(panel.background = element_blank(),
+        plot.background = element_rect(colour = 'grey70'),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank()) +
+  labs(title = 'Posterior predictive distribution') +
+  scale_x_continuous(breaks = 0:9)
+```
+
+Notice that this distribution is a bit more spread out than the other one above. The posterior predictive distribution takes into account the uncertainty from the posterior distribution. In the previous example, we took a single point estimate `prob = 0.7`. This ignored any uncertainty in the estimate, resulting in overconfident predictions.
+
+The posterior predictive distribution also looks similar to the posterior, which is good.
+
+It might be a bit immature to conclude that the model is good. Really, there's two assumptions in the model:
+
+* The data is binomial
+* Each observation is independent from the other observations
+
+So far we've only tested the first assumption. Testing the second assumption requires a bit of thinking - we need to come up with other ways of looking at the data. In the examples so far, we summarised each experiment with a single number, the number of heads observed. Here's two other ways of looking at the data
+
+* The longest run (e.g. HHHHTHTTT has a run of 4 H's)
+* The number of switches (e.g. HTHTTTHHT has 5 switches)
+
+It's slightly more involved to simulate these numbers, since there isn't a nice builtin like `rbinom` to do all the work for us.
+
+```{r}
+max_run = function(vec){
+  len = 1
+  run_len = 1
+  for (i in seq(1, length(vec) - 1)){
+    run_len = run_len + 1
+    if (vec[i] == vec[i + 1]){
+      if (run_len > len){
+        len = run_len
+      }
+    }
+    else{
+      run_len = 1
+    }
+  }
+  
+  return(len)
+}
+
+switches = function(vec){
+  n_switch = 0
+  
+  for (i in seq(1, length(vec) - 1)){
+    if (vec[i] != vec[i + 1]){
+      n_switch = n_switch + 1
+    }
+  }
+  
+  return(n_switch)
+}
+
+sim_max_run = function(n, size, prob){
+  # Return the length of the longest run of binomial data
+  run_len = vector('integer', n)
+  
+  for (i in 1:n){
+    exp_data = rbinom(size, 1, prob)
+    run_len[i] = max_run(exp_data)
+  }
+  
+  return(run_len)
+}
+
+sim_n_switch = function(n, size, prob){
+  # Return the number of switches in binomial data
+  n_switch = vector('integer', n)
+  
+  for (i in 1:n){
+    exp_data = rbinom(size, 1, prob)
+    n_switch[i] = switches(exp_data)
+  }
+  
+  return(n_switch)
+}
+```
+
+```{r, fig.height = 3, fig.align = 'center', echo = F}
+sim_data = sim_max_run(1e4, 9, samples)
+
+p1 = sim_data %>%
+  data.frame() %>%
+    ggplot(aes(.)) +
+    geom_histogram(bins = 30) +
+    theme(panel.background = element_blank(),
+          plot.background = element_rect(colour = 'grey70'),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.y = element_blank()) +
+    labs(title = 'Maximum run length') +
+    scale_x_continuous(breaks = 0:9)
+
+sim_data = sim_n_switch(1e4, 9, samples)
+
+p2 = sim_data %>%
+  data.frame() %>%
+    ggplot(aes(.)) +
+    geom_histogram(bins = 30) +
+    theme(panel.background = element_blank(),
+          plot.background = element_rect(colour = 'grey70'),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.y = element_blank()) +
+    labs(title = 'Number of switches') +
+    scale_x_continuous(breaks = 0:9)
+
+p1 + p2
+```
+
+How does this line up with the observed data? Remember we saw HTHHHTHTH from our experiment. This has a longest run of 3 heads, and it has 6 switches. The longest run lines up nicely with what we'd expect, but the model thinks that the number of switches is a bit unexpected.
+
+This doesn't mean the model is bad - bad depends on what you're trying to use the model for. If you're interested in predicting the bias of the coin, the model is decent. If you're interested in predicting the longest run in an experiment, the model is decent. If you're interested in predicting the number of switches in an experiment, the model isn't great.
+
+# Chapter 4 - Our first model
